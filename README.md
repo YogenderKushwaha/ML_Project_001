@@ -1,5 +1,7 @@
 ## End To End ML Project: Diamond Price Prediction
 
+## Deployed on Azure with github Action
+
 ## [Click to Open](https://diamondpricepredictionapp.azurewebsites.net/)
 
 
