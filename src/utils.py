@@ -1,52 +1,44 @@
-import os
-import sys
-import pickle
-import numpy as np 
-import pandas as pd
-from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
-
-from src.exception import CustomException
-from src.logger import logging
-
-def save_object(file_path, obj):
-    try:
-        dir_path = os.path.dirname(file_path)
-
-        os.makedirs(dir_path, exist_ok=True)
-
-        with open(file_path, "wb") as file_obj:
-            pickle.dump(obj, file_obj)
-
-    except Exception as e:
-        raise CustomException(e, sys)
-
-def evaluate_model(X_train,y_train,X_test,y_test,models):
-    try:
-        report = {}
-        for i in range(len(models)):
-            model = list(models.values())[i]
-            # Train Model
-            model.fit(X_train,y_train)
-
-            # Predict Testing Data
-            y_test_pred = model.predict(X_test)
-
-            # Get R2 scores test data
-            test_model_score = r2_score(y_test, y_test_pred)
-
-            report[list(models.keys())[i]] = test_model_score
-        return report
-
-    except Exception as e:
-        logging.info('Exception occured during model training')
-        raise CustomException(e,sys)
+from flask import Flask,request,render_template,jsonify
+from src.pipeline.prediction_pipeline import CustomData,PredictPipeline
 
 
-def load_object(file_path):
-    try:
-        with open(file_path,'rb') as file_obj:
-            return pickle.load(file_obj)
+application=Flask(__name__)
 
-    except Exception as e:
-        logging.info('Exception occured in load_object function utils')
-        raise CustomException(e, sys)
+app=application
+
+
+
+@app.route('/')
+def home_page():
+    return render_template('index.html')
+
+@app.route('/predict',methods=['GET','POST'])
+
+def predict_datapoint():
+    if request.method=='GET':
+        return render_template('form.html')
+    
+    else:
+        data=CustomData(
+            carat=float(request.form.get('carat')),
+            depth = float(request.form.get('depth')),
+            table = float(request.form.get('table')),
+            x = float(request.form.get('x')),
+            y = float(request.form.get('y')),
+            z = float(request.form.get('z')),
+            cut = request.form.get('cut'),
+            color= request.form.get('color'),
+            clarity = request.form.get('clarity')
+        )
+        final_new_data=data.get_data_as_dataframe()
+        predict_pipeline=PredictPipeline()
+        pred=predict_pipeline.predict(final_new_data)
+
+        results=round(pred[0],2)
+
+        return render_template('results.html',final_result=results)
+
+
+
+if __name__=="__main__":
+    app.run(host='0.0.0.0',debug=True)
